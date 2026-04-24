@@ -6,6 +6,9 @@ var logger = require('morgan');
 var db = require('./config/db')
 var cors = require('cors')
 
+require('dotenv').config();
+var session = require('express-session');
+
 
 
 async function dbcall(){
@@ -31,6 +34,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'fallback_secret_key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false } // Change to true if using HTTPS
+}));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);

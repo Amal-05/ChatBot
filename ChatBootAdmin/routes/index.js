@@ -7,11 +7,24 @@ var AvatarMOdel = require('../Model/AvatarsModel')
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const fs = require("fs");
 
+const requireAuth = (req, res, next) => {
+  if (req.session && req.session.isAdmin) {
+    next();
+  } else {
+    res.redirect('/?error=unauthorized');
+  }
+};
+
 /* GET home page. */
 router.get('/', function(req, res, next) {
-  res.render('Admin/Login', { title: 'Express' });
+  const error = req.query.error;
+  let errorMessage = null;
+  if (error === 'invalid_credentials') errorMessage = "Invalid email or password.";
+  if (error === 'unauthorized') errorMessage = "Please log in to access the dashboard.";
+  res.render('Admin/Login', { title: 'Express', errorMessage });
 });
-router.get('/home', async (req,res)=>{
+
+router.get('/home', requireAuth, async (req,res)=>{
   let category =  await categoryModel.find()
   let question = await QuestionModel.find()
   let avatar = await AvatarMOdel.find()
@@ -21,18 +34,34 @@ router.get('/home', async (req,res)=>{
 
 router.post('/login',(req,res)=>{
   try {
-    console.log(req.body)
-    let {email} = req.body;
-    let {password} = req.body;
-    if(email== 'admin@gamil.com' && password == '123'){
+    let {email, password} = req.body;
+    const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@gamil.com';
+    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '123';
+    
+    if(email === ADMIN_EMAIL && password === ADMIN_PASSWORD){
+      req.session.isAdmin = true;
       res.redirect('/home')
+    } else {
+      res.redirect('/?error=invalid_credentials')
     }
   } catch (error) {
     console.log(error)
     res.redirect('/')
   }
 })
-router.post('/AddCategory', async (req,res)=>{
+
+router.get('/logout', (req, res) => {
+  if (req.session) {
+    req.session.destroy(err => {
+      if (err) console.log(err);
+      res.redirect('/');
+    });
+  } else {
+    res.redirect('/');
+  }
+});
+
+router.post('/AddCategory', requireAuth, async (req,res)=>{
   try {
       console.log(req.body)
      await  categoryModel.create(req.body)
@@ -42,7 +71,7 @@ router.post('/AddCategory', async (req,res)=>{
   }
 })
 
-router.get('/deletCategory/:id',async (req,res)=>{
+router.get('/deletCategory/:id', requireAuth, async (req,res)=>{
   try {
     let id = req.params.id
     await categoryModel.deleteOne({_id:id})
@@ -52,7 +81,7 @@ router.get('/deletCategory/:id',async (req,res)=>{
     console.log(error)
   }
 })
-router.post('/addQuestion',async (req,res)=>{
+router.post('/addQuestion', requireAuth, async (req,res)=>{
   try {
     await QuestionModel.create(req.body)
     console.log("added questions")
@@ -62,7 +91,7 @@ router.post('/addQuestion',async (req,res)=>{
   }
 })
 
-router.get('/delete-question/:id',async(req,res)=>{
+router.get('/delete-question/:id', requireAuth, async(req,res)=>{
   try {
     let id = req.params.id
     await QuestionModel.deleteOne({_id:id})
@@ -72,8 +101,9 @@ router.get('/delete-question/:id',async(req,res)=>{
     console.log(error)
   }
 })
-router.post('/add-avatar', async(req,res)=>{
+router.post('/add-avatar', requireAuth, async(req,res)=>{
   try {
+    console.log(req.body)
     await  AvatarMOdel.create(req.body)
     res.redirect('/home')
   } catch (error) {
@@ -81,7 +111,7 @@ router.post('/add-avatar', async(req,res)=>{
   }
 })
 
-router.get('/delete-avatar/:id',async (req,res)=>{
+router.get('/delete-avatar/:id', requireAuth, async (req,res)=>{
   try {
       let id = req.params.id
       await AvatarMOdel.deleteOne({_id:id})
@@ -130,9 +160,18 @@ router.get('/get-categoryBasedQuestion/:cate',async (req,res)=>{
 // const genAI = new GoogleGenerativeAI("AIzaSyDX-ZlUY-ISO6dBysdYsEZtEUs4K7LXxGI");
 // const genAI = new GoogleGenerativeAI("AIzaSyDX-ZlUY-ISO6dBysdYsEZtEUs4K7LXxGI");
 
-const gemini_api_key = "AIzaSyDX-ZlUY-ISO6dBysdYsEZtEUs4K7LXxGI";
+const gemini_api_key = process.env.GEMINI_API_KEY || "AIzaSyA4KNYhKB9ohuw19vjVQu6inu9IpbsmgpA";
 const googleAI = new GoogleGenerativeAI(gemini_api_key);
 
+const path = require('path');
+
+const websiteDataPath = path.join(__dirname, '../website_data.md');
+let websiteContext = "";
+try {
+  websiteContext = fs.readFileSync(websiteDataPath, 'utf8');
+} catch(e) {
+  console.log("Could not load website_data.md");
+}
 
 router.post('/get-webisteQueston', async (req, res) => {
 try {
@@ -144,47 +183,35 @@ try {
     maxOutputTokens: 4096,
   };
   const geminiModel = googleAI.getGenerativeModel({
-    model: "gemini-pro",
+    model: "gemini-2.5-flash",
     geminiConfig,
   });
   const generate = async () => {
     try {
-      let weburl = 'https://www.nsspolytechnic.ac.in/'
-      const filePath = "/File/Content.txt";
-      
-
-      // fs.readFile(filePath, "utf8", async (err, textContent) => {
-      //   if (err) {
-      //     console.error(`Error reading file: ${err.message}`);
-      //     return;
-      //   }
       let {question} = req.body
-      fs.readFile(filePath,"utf8",async (err,textContent)=>{
-        if(err){
-          console.log(err)
-        }
-        console.log(textContent)
-        const prompt = ` ${textContent} in NSS Polytechnic College pandalam ,and answer the ${question}`;
-        const result = await geminiModel.generateContent(prompt);
-        const response = result.response;
-        console.log(response.text());
-        res.json(response.text());
-      })
-        
-      // let {question} = req.body
-      // const prompt = ` ${question} in NSS Polytechnic College pandalam refer this link ${weburl}`;
-      // const result = await geminiModel.generateContent(prompt);
-      // const response = result.response;
-      // console.log(response.text());
-      // res.json(response.text());
+      
+      const prompt = `You are an expert college assistant for NSS Polytechnic College Pandalam.
+Use the following information scraped directly from the official website to answer the user's question accurately and concisely.
+
+Website Information:
+${websiteContext}
+
+User Question: ${question}`;
+      
+      const result = await geminiModel.generateContent(prompt);
+      const response = result.response;
+      console.log(response.text());
+      res.json(response.text());
     } catch (error) {
       console.log("response error", error);
+      res.status(500).json({ answer: "Sorry, I am having trouble connecting to my AI brain." });
     }
   };
    
   generate();
 } catch (error) {
   console.log(error)
+  res.status(500).json({ answer: "Server error." });
 }
 });
 module.exports = router;

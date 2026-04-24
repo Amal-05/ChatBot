@@ -1,21 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './chatboot.css';
 import Axios from '../axios/Axios';
 
 function ChatBoot() {
   const [messages, setMessages] = useState([
-    { id: 1, sender: 'bot', text: 'Hi! What is your name?', avatar: '' },
+    { id: 1, sender: 'bot', text: 'Hi! I am the NSS Polytechnic College Assistant. How can I help you today? What is your name?', avatar: '' },
   ]);
-  const [botAvatar, setBotAvatar] = useState('/bot-avatar.png'); // Default placeholder avatar
+  const [botAvatar, setBotAvatar] = useState('/bot-avatar.png');
   const [newMessage, setNewMessage] = useState('');
-  const [aiNewMessage, setAiNewMessage] = useState('');
   const [name, setName] = useState('');
   const [categories, setCategories] = useState([]);
   const [questions, setQuestions] = useState([]);
-  const [answer, setAnswer] = useState(null);
-  const [anythingButton, setAnythingButton] = useState(false);
-  const [genartedAnswer, setGenartedAnswer] = useState('');
-  const [isTyping, setIsTyping] = useState(false); // To show typing animation
+  const [isTyping, setIsTyping] = useState(false);
+  
+  const chatEndRef = useRef(null);
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping, categories, questions]);
 
   // Fetch the bot avatar
   useEffect(() => {
@@ -24,8 +27,8 @@ function ChatBoot() {
         const response = await Axios.get('/get-avatar');
         if (response.data?.imageUrl) {
           setBotAvatar(response.data.imageUrl);
-          setMessages((prevMessages) =>
-            prevMessages.map((msg) =>
+          setMessages((prev) =>
+            prev.map((msg) =>
               msg.sender === 'bot' ? { ...msg, avatar: response.data.imageUrl } : msg
             )
           );
@@ -34,123 +37,103 @@ function ChatBoot() {
         console.error('Error fetching bot avatar:', error);
       }
     };
-
     fetchBotAvatar();
   }, []);
 
   // Fetch categories when a name is set
   useEffect(() => {
     if (!name) return;
-
     const fetchCategories = async () => {
       try {
-        setIsTyping(true); // Show typing animation
+        setIsTyping(true);
         const response = await Axios.get('/get-allCategory');
         if (response.data && Array.isArray(response.data)) {
-          console.log(response.data)
           setCategories(response.data);
         }
-        setIsTyping(false); // Hide typing animation
+        setIsTyping(false);
       } catch (error) {
         setIsTyping(false);
         console.error('Error fetching categories:', error);
       }
     };
-
     fetchCategories();
   }, [name]);
 
-  const handleSendMessageAI = async () => {
-    if (!aiNewMessage.trim()) return;
-
-    setMessages((prevMessages) => [
-      ...prevMessages,
-      {
-        id: prevMessages.length + 1,
-        sender: 'user',
-        text: aiNewMessage,
-        avatar:
-          'https://www.pngarts.com/files/5/User-Avatar-PNG-Transparent-Image.png',
-      },
-    ]);
-
-    setIsTyping(true); // Show typing animation
-
-    try {
-      const response = await Axios.post('/get-webisteQueston', { question: aiNewMessage });
-      setGenartedAnswer(response.data);
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          id: prevMessages.length + 2,
-          sender: 'bot',
-          text: response.data.answer,
-          avatar: botAvatar,
-        },
-      ]);
-    } catch (error) {
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          id: prevMessages.length + 2,
-          sender: 'bot',
-          text: 'Sorry, I couldn’t process your question.',
-          avatar: botAvatar,
-        },
-      ]);
-    } finally {
-      setIsTyping(false); // Hide typing animation
-    }
-
-    setAiNewMessage('');
-  };
-
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
 
-    setMessages((prevMessages) => [
-      ...prevMessages,
+    const userText = newMessage;
+    setNewMessage('');
+    
+    setMessages((prev) => [
+      ...prev,
       {
-        id: prevMessages.length + 1,
+        id: Date.now(),
         sender: 'user',
-        text: newMessage,
-        avatar:
-          'https://www.pngarts.com/files/5/User-Avatar-PNG-Transparent-Image.png',
+        text: userText,
+        avatar: 'https://www.pngarts.com/files/5/User-Avatar-PNG-Transparent-Image.png',
       },
     ]);
 
     if (!name) {
-      setName(newMessage);
-      setMessages((prevMessages) => [
-        ...prevMessages,
+      setName(userText);
+      setMessages((prev) => [
+        ...prev,
         {
-          id: prevMessages.length + 2,
+          id: Date.now() + 1,
           sender: 'bot',
-          text: `Nice to meet you, ${newMessage}! Let me show you some categories.`,
+          text: `Nice to meet you, ${userText}! You can select a category below or ask me any question directly.`,
           avatar: botAvatar,
         },
       ]);
     } else {
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          id: prevMessages.length + 2,
-          sender: 'bot',
-          text: `Hey, ${name}! You can select a category below to see the questions.`,
-          avatar: botAvatar,
-        },
-      ]);
+      setIsTyping(true);
+      try {
+        const response = await Axios.post('/get-webisteQueston', { question: userText });
+        const answerText = response.data?.answer || response.data || 'I am not sure how to answer that.';
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now() + 1,
+            sender: 'bot',
+            text: answerText,
+            avatar: botAvatar,
+          },
+        ]);
+      } catch (error) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now() + 1,
+            sender: 'bot',
+            text: 'Sorry, I couldn’t process your question.',
+            avatar: botAvatar,
+          },
+        ]);
+      } finally {
+        setIsTyping(false);
+      }
     }
-
-    setNewMessage('');
   };
 
   const handleCategoryClick = async (category) => {
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        sender: 'user',
+        text: `I'd like to explore: ${category.name}`,
+        avatar: 'https://www.pngarts.com/files/5/User-Avatar-PNG-Transparent-Image.png',
+      },
+    ]);
+    
+    // Don't clear categories here, so we can return to them
+    
     try {
-      setIsTyping(true); // Show typing animation
+      setIsTyping(true);
       const response = await Axios.get(`/get-categoryBasedQuestion/${category.name}`);
       setQuestions(response.data);
-      setIsTyping(false); // Hide typing animation
+      setIsTyping(false);
     } catch (error) {
       setIsTyping(false);
       console.error('Error fetching questions:', error);
@@ -158,109 +141,117 @@ function ChatBoot() {
   };
 
   const handleAnswer = (question) => {
-    setAnswer(question.answer);
-    setMessages((prevMessages) => [
-      ...prevMessages,
+    setMessages((prev) => [
+      ...prev,
       {
-        id: prevMessages.length + 1,
+        id: Date.now(),
+        sender: 'user',
+        text: question.question,
+        avatar: 'https://www.pngarts.com/files/5/User-Avatar-PNG-Transparent-Image.png',
+      },
+      {
+        id: Date.now() + 1,
         sender: 'bot',
         text: question.answer,
         avatar: botAvatar,
       },
     ]);
-  };
-
-  const toggleAnythingButton = () => {
-    setAnythingButton(!anythingButton);
+    setQuestions([]); // Hide questions after selection
   };
 
   return (
-    <div className="chat-container">
-      <button className="anything" onClick={toggleAnythingButton}>
-        Ask Anything
-      </button>
+    <div className="chat-wrapper">
+      <div className="chat-header">
+        <div className="header-info">
+          <img src={botAvatar} alt="bot-avatar" className="header-avatar" />
+          <div>
+            <h2>College Assistant</h2>
+            <span className="status">Online</span>
+          </div>
+        </div>
+      </div>
+
       <div className="chat-body">
         {messages.map((msg) => (
           <div key={msg.id} className={`chat-message ${msg.sender}`}>
-            <img src={msg.avatar} alt={`${msg.sender}-avatar`} className="avatar" />
-            <div className="message-text">{msg.text}</div>
+            {msg.sender === 'bot' && <img src={msg.avatar} alt="bot" className="avatar" />}
+            <div className="message-content">
+              <div className="message-text">{msg.text}</div>
+            </div>
+            {msg.sender === 'user' && <img src={msg.avatar} alt="user" className="avatar" />}
           </div>
         ))}
+
         {isTyping && (
           <div className="chat-message bot">
-            <img src={botAvatar} alt="bot-avatar" className="avatar" />
-            <div className="message-text">Typing...</div>
+            <img src={botAvatar} alt="bot" className="avatar" />
+            <div className="message-content">
+              <div className="message-text typing-indicator">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
           </div>
         )}
-        <div className="chat-category">
-          {categories.map((category) => (
-            <button
-              key={category.id}
-              onClick={() => handleCategoryClick(category)}
-              className="category-button"
-            >
-              {category.name}
-              {category.Subname ? <>
-                <button style={{color:"black",border:'1px solid black'}}>
-                  {category.Subname}
+
+        {categories.length > 0 && questions.length === 0 && (
+          <div className="quick-replies-container">
+            <p className="quick-replies-title">Select a Category:</p>
+            <div className="quick-replies">
+              {categories.map((category) => (
+                <button
+                  key={category._id || category.id}
+                  onClick={() => handleCategoryClick(category)}
+                  className="quick-reply-btn"
+                >
+                  {category.name}
+                  {category.Subname && <span className="subname-badge">{category.Subname}</span>}
                 </button>
-              </> : ""}
-            </button>
-          ))}
-        </div>
-
-        <div className="chat-questions">
-          {questions.map((question) => (
-            <button
-              key={question.id}
-              onClick={() => handleAnswer(question)}
-              className="category-button"
-            >
-              {question.question} ?
-            </button>
-          ))}
-        </div>
-
-        {answer && (
-          <div className="answers">
-            <div className="answer">
-              <img src={botAvatar} className="avatar" alt="bot-avatar" />
-              <div className="question">{answer}</div>
+              ))}
             </div>
           </div>
         )}
 
-        {genartedAnswer && (
-          <div className="answers">
-            <div className="answer">
-              <img src={botAvatar} className="avatar" alt="bot-avatar" />
-              <div className="question">{genartedAnswer}</div>
+        {questions.length > 0 && (
+          <div className="quick-replies-container">
+            <p className="quick-replies-title">Available Topics:</p>
+            <div className="quick-replies">
+              <button 
+                className="quick-reply-btn" 
+                style={{ backgroundColor: '#f3f4f6', color: '#374151', borderColor: '#d1d5db' }}
+                onClick={() => setQuestions([])}
+              >
+                ⬅ Back to Categories
+              </button>
+              {questions.map((question) => (
+                <button
+                  key={question._id || question.id}
+                  onClick={() => handleAnswer(question)}
+                  className="quick-reply-btn"
+                >
+                  {question.question}
+                </button>
+              ))}
             </div>
           </div>
         )}
+
+        <div ref={chatEndRef} />
       </div>
 
-      {anythingButton ? (
-        <div className="chat-input-new">
+      <div className="chat-footer">
+        <div className="chat-input-wrapper">
           <input
             type="text"
-            placeholder="Ask any question about the college..."
-            value={aiNewMessage}
-            onChange={(e) => setAiNewMessage(e.target.value)}
-          />
-          <button onClick={handleSendMessageAI}>Send</button>
-        </div>
-      ) : (
-        <div className="chat-input">
-          <input
-            type="text"
-            placeholder="Type your message..."
+            placeholder={name ? "Type your message or ask a question..." : "Enter your name..."}
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
           />
-          <button onClick={handleSendMessage}>Send</button>
+          <button onClick={handleSendMessage} className="send-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+          </button>
         </div>
-      )}
+      </div>
     </div>
   );
 }
