@@ -4,7 +4,7 @@ import Axios from '../axios/Axios';
 
 function ChatBoot() {
   const [messages, setMessages] = useState([
-    { id: 1, sender: 'bot', text: 'Hi! I am the NSS Polytechnic College Assistant. How can I help you today? What is your name?', avatar: '' },
+    { id: 1, sender: 'bot', text: 'Hi! I am Professor, the NSS Polytechnic College Assistant. How can I help you today? What is your name?', avatar: '' },
   ]);
   const [botAvatar, setBotAvatar] = useState('/bot-avatar.png');
   const [newMessage, setNewMessage] = useState('');
