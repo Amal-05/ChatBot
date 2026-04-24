@@ -277,3 +277,5 @@ The General Department has been part of this institution since its inception. Th
 ###### N. S. S. Polytechnic College
 [Quick Enquiry](https://nsspolytechnic.ac.in/quick-enquiry/)
 
+T h e   P r i n c i p a l   o f   N S S   P o l y t e c h n i c   C o l l e g e ,   P a n d a l a m ,   i s   D r .   P r e e t h a   R .  
+ 
