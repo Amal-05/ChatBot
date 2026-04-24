@@ -86,3 +86,8 @@ Navigate to `http://localhost:3000/`.
 When deploying to a platform like Render, Vercel, or Heroku:
 1. **Do not** push your `.env` file to GitHub (this is already prevented by `.gitignore`).
 2. You **must** manually configure the Environment Variables (`ADMIN_EMAIL`, `ADMIN_PASSWORD`, `SESSION_SECRET`, `GEMINI_API_KEY`) within your hosting provider's dashboard for the Admin Panel to function securely.
+
+---
+
+## Credits
+**Made by Amal**

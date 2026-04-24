@@ -252,6 +252,9 @@ function ChatBoot() {
           </button>
         </div>
       </div>
+      <div className="chat-credit" style={{ textAlign: 'center', fontSize: '11px', color: '#9ca3af', padding: '8px 0', borderTop: '1px solid #e5e7eb', backgroundColor: '#f9fafb' }}>
+        Made by Amal
+      </div>
     </div>
   );
 }

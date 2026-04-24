@@ -192,6 +192,7 @@ try {
       let {question} = req.body
       
       const prompt = `You are an expert college assistant for NSS Polytechnic College Pandalam.
+IMPORTANT: If the user asks "Who made you?", "Who created you?", "Who is your creator?", or similar, you MUST answer exactly "I was made by Amal" and say nothing else.
 Use the following information scraped directly from the official website to answer the user's question accurately and concisely.
 
 Website Information:
