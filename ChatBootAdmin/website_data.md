@@ -279,3 +279,12 @@ The General Department has been part of this institution since its inception. Th
 
 T h e   P r i n c i p a l   o f   N S S   P o l y t e c h n i c   C o l l e g e ,   P a n d a l a m ,   i s   D r .   P r e e t h a   R .  
  
+ 
+ # #   F a c u l t y   a n d   L e a d e r s h i p 
+ -   H e a d   o f   C o m p u t e r   S c i e n c e   ( C S )   D e p a r t m e n t :   [ H O D   N a m e ] 
+ -   H e a d   o f   M e c h a n i c a l   D e p a r t m e n t :   [ H O D   N a m e ] 
+ -   H e a d   o f   C i v i l   D e p a r t m e n t :   [ H O D   N a m e ] 
+ -   H e a d   o f   E l e c t r i c a l   &   E l e c t r o n i c s   D e p a r t m e n t :   [ H O D   N a m e ] 
+ -   H e a d   o f   E l e c t r o n i c s   &   C o m m u n i c a t i o n   D e p a r t m e n t :   [ H O D   N a m e ] 
+  
+ 
