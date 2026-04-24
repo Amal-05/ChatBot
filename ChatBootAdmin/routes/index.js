@@ -155,12 +155,10 @@ router.get('/get-categoryBasedQuestion/:cate',async (req,res)=>{
     res.json(question)
   } catch (error) {
     console.log(error)
-  }
-})
-// const genAI = new GoogleGenerativeAI("AIzaSyDX-ZlUY-ISO6dBysdYsEZtEUs4K7LXxGI");
-// const genAI = new GoogleGenerativeAI("AIzaSyDX-ZlUY-ISO6dBysdYsEZtEUs4K7LXxGI");
-
-const gemini_api_key = process.env.GEMINI_API_KEY || "AIzaSyA4KNYhKB9ohuw19vjVQu6inu9IpbsmgpA";
+const gemini_api_key = process.env.GEMINI_API_KEY;
+if (!gemini_api_key) {
+  console.error("WARNING: GEMINI_API_KEY is not defined in the environment variables!");
+}
 const googleAI = new GoogleGenerativeAI(gemini_api_key);
 
 const path = require('path');
