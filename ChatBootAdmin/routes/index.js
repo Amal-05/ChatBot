@@ -155,6 +155,9 @@ router.get('/get-categoryBasedQuestion/:cate',async (req,res)=>{
     res.json(question)
   } catch (error) {
     console.log(error)
+  }
+})
+
 const gemini_api_key = process.env.GEMINI_API_KEY;
 if (!gemini_api_key) {
   console.error("WARNING: GEMINI_API_KEY is not defined in the environment variables!");
